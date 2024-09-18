@@ -26,6 +26,9 @@ contract Devil is IDevil, ReentrancyGuard, Pausable {
     /// @inheritdoc IDevil
     mapping(bytes32 => uint16) public discount;
 
+    /// @notice Reward or punish ratio when winning or losing(x%)
+    uint8 public immutable ratio;
+
     /// @notice Thrown when the days of duration is less then MINIMUM_DURATION
     error InvalidDuration();
     /// @notice Thrown when the feed price is less then or equal 0
@@ -40,15 +43,18 @@ contract Devil is IDevil, ReentrancyGuard, Pausable {
         address indexed owner,
         uint128 amount,
         bool long,
-        uint8 daysOfDuration,
-        uint256 entryPrice
+        uint256 entryPrice,
+        uint256 startTime,
+        uint8 daysOfDuration
     );
+    event BearedTheBet(address indexed owner, bytes32 indexed key, uint128 amount, uint128 paid);
 
-    constructor(address _token, address _priceFeed, uint256 _priceFeedHeartbeat, address _sequencer) {
+    constructor(address _token, address _priceFeed, uint256 _priceFeedHeartbeat, address _sequencer, uint8 _ratio) {
         token = _token;
         priceFeed = AggregatorV3Interface(_priceFeed);
         priceFeedHeartbeat = _priceFeedHeartbeat;
         sequencer = AggregatorV3Interface(_sequencer);
+        ratio = _ratio;
     }
 
     /// @inheritdoc IDevil
@@ -83,7 +89,7 @@ contract Devil is IDevil, ReentrancyGuard, Pausable {
         // transfer token
         IERC20(token).transfer(address(this), amount);
 
-        emit SignedTheBet(msg.sender, recipient, amount, long, daysOfDuration, price);
+        emit SignedTheBet(msg.sender, recipient, amount, long, price, block.timestamp, daysOfDuration);
     }
 
     /// @inheritdoc IDevil
@@ -91,8 +97,33 @@ contract Devil is IDevil, ReentrancyGuard, Pausable {
         uint128 amount,
         uint256 entryPrice,
         bool long,
+        uint256 startTime,
         uint8 daysOfDuration
-    ) public nonReentrant whenNotPaused {}
+    ) public nonReentrant whenNotPaused {
+        // check bet
+        bytes32 key = keccak256(abi.encodePacked(msg.sender, amount, long, entryPrice, startTime, daysOfDuration));
+        Bet memory bet = bets[key];
+        if (bet.status == BetStatus.CREATED) {
+            // compare price
+            uint256 price = getChainlinkPrice();
+            uint128 paid;
+            if ((long && price > entryPrice) || (!long && price < entryPrice)) {
+                // win
+                paid = (amount * (100 + ratio)) / 100;
+            } else {
+                // loss
+                paid = (amount * (100 - ratio)) / 100;
+            }
+
+            // update state
+            bets[key].status = BetStatus.FINISHED;
+
+            // transfer token
+            IERC20(token).transfer(msg.sender, paid);
+
+            emit BearedTheBet(msg.sender, key, amount, paid);
+        }
+    }
 
     /// @inheritdoc IDevil
     function sendTheBetToTheDestinedPerson(

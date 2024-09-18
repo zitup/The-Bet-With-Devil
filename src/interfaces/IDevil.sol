@@ -53,8 +53,15 @@ interface IDevil {
     /// @param amount The deposit token amount of the bet
     /// @param entryPrice The entry token price of the bet
     /// @param long True if the direction of the bet is long, otherwise false
+    /// @param startTime The start timestamp of the bet
     /// @param daysOfDuration The days of duration of the bet
-    function bearTheBet(uint128 amount, uint256 entryPrice, bool long, uint8 daysOfDuration) external;
+    function bearTheBet(
+        uint128 amount,
+        uint256 entryPrice,
+        bool long,
+        uint256 startTime,
+        uint8 daysOfDuration
+    ) external;
 
     /// @notice Set a discount for a bet and wait for a destined person to buy it
     /// @param amount The deposit token amount of the bet
