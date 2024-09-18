@@ -16,13 +16,13 @@ interface IDevil {
     /// @return startTime The start timestamp of the bet
     /// @return daysOfDuration The days of duration of the bet
     /// @return status The status of the bet
-    function bet(
+    function bets(
         bytes32 key
     )
         external
         view
         returns (
-            uint256 amount,
+            uint128 amount,
             bool long,
             uint256 entryPrice,
             uint256 startTime,
@@ -38,14 +38,14 @@ interface IDevil {
     /// @notice Sign the bet wiht Devil
     /// @param recipient The address for which the bet will be created (Is there anyone you love VERY MUCH?)
     /// @param amount The amount to deposit
-    /// @param acceptablePrice The acceptable token price for the bet
     /// @param long True if the direction of the bet is long, otherwise false
+    /// @param acceptablePrice The acceptable token price for the bet, decimals 18
     /// @param daysOfDuration The days of duration of the bet
     function signTheBet(
         address recipient,
         uint128 amount,
-        uint128 acceptablePrice,
         bool long,
+        uint256 acceptablePrice,
         uint8 daysOfDuration
     ) external;
 
@@ -54,7 +54,7 @@ interface IDevil {
     /// @param entryPrice The entry token price of the bet
     /// @param long True if the direction of the bet is long, otherwise false
     /// @param daysOfDuration The days of duration of the bet
-    function bearTheBet(uint128 amount, uint128 entryPrice, bool long, uint8 daysOfDuration) external;
+    function bearTheBet(uint128 amount, uint256 entryPrice, bool long, uint8 daysOfDuration) external;
 
     /// @notice Set a discount for a bet and wait for a destined person to buy it
     /// @param amount The deposit token amount of the bet
@@ -64,8 +64,8 @@ interface IDevil {
     /// @param discount The discount number (x%)
     function sendTheBetToTheDestinedPerson(
         uint128 amount,
-        uint128 entryPrice,
         bool long,
+        uint256 entryPrice,
         uint8 daysOfDuration,
         uint16 discount
     ) external;
@@ -81,8 +81,8 @@ interface IDevil {
     function receiveTheBet(
         address owner,
         uint128 amount,
-        uint128 entryPrice,
         bool long,
+        uint256 entryPrice,
         uint8 daysOfDuration,
         uint16 discount,
         address recipient

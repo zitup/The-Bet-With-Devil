@@ -7,7 +7,7 @@ enum BetStatus {
 }
 
 struct Bet {
-    uint256 amount;
+    uint128 amount;
     // direction, long or short
     bool long;
     uint256 entryPrice;
