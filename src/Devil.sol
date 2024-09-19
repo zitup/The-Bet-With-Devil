@@ -35,8 +35,15 @@ contract Devil is IDevil, ReentrancyGuard, Pausable {
     error InvalidFeedPrice(int256 price);
     /// @notice Thrown when the feed price is staled
     error StaledPriceFeed(uint256 timeStamp);
+    /// @notice Thrown when the L2 sequencer is unactive
     error L2SequencerUnavailable();
+    /// @notice Thrown when the feed price exceed the acceptable price
     error ExceedAcceptablePrice(uint256 price);
+    /// @notice Thrown when the discount is invalid
+    error InvalidDiscount();
+    /// @notice Thrown when the discount doesn't match. Avoid changing discount before the swap tx
+    error UnmatchedDiscount();
+    error NonExistentBet();
 
     event SignedTheBet(
         address sender,
@@ -48,6 +55,8 @@ contract Devil is IDevil, ReentrancyGuard, Pausable {
         uint8 daysOfDuration
     );
     event BearedTheBet(address indexed owner, bytes32 indexed key, uint128 amount, uint128 paid);
+    event SendTheBetToTheDestinedPerson(bytes32 indexed key, uint16 indexed _discount);
+    event ReceiveTheBet(address indexed recipient, address indexed owner);
 
     constructor(address _token, address _priceFeed, uint256 _priceFeedHeartbeat, address _sequencer, uint8 _ratio) {
         token = _token;
@@ -128,29 +137,52 @@ contract Devil is IDevil, ReentrancyGuard, Pausable {
     /// @inheritdoc IDevil
     function sendTheBetToTheDestinedPerson(
         uint128 amount,
-        bool long,
         uint256 entryPrice,
+        bool long,
+        uint256 startTime,
         uint8 daysOfDuration,
         uint16 _discount
     ) public nonReentrant whenNotPaused {
-        // key = keccake256(msg.sender, ...)
-        // discount[key] = _discount
+        if (_discount == 0) {
+            revert InvalidDiscount();
+        }
+        bytes32 key = keccak256(abi.encodePacked(msg.sender, amount, long, entryPrice, startTime, daysOfDuration));
+        if (bets[key].status != BetStatus.CREATED) {
+            revert NonExistentBet();
+        }
+        discount[key] = _discount;
+        emit SendTheBetToTheDestinedPerson(key, _discount);
     }
 
     /// @inheritdoc IDevil
     function receiveTheBet(
         address owner,
         uint128 amount,
-        bool long,
         uint256 entryPrice,
+        bool long,
+        uint256 startTime,
         uint8 daysOfDuration,
         uint16 _discount,
         address recipient
     ) public nonReentrant whenNotPaused {
-        // 1. check if there is a selling bet by the given info, check _discount if match
-        // 2. check the token balance of msg.sender
-        // 3. update bet
-        // 4. transfer token
+        // check if there is a selling bet with the given info, check if _discount match
+        bytes32 key = keccak256(abi.encodePacked(owner, amount, long, entryPrice, startTime, daysOfDuration));
+        Bet memory bet = bets[key];
+        if (bet.status != BetStatus.CREATED) {
+            revert NonExistentBet();
+        }
+        if (discount[key] != _discount) {
+            revert UnmatchedDiscount();
+        }
+
+        // update bet
+        delete bets[key];
+        bets[keccak256(abi.encodePacked(recipient, amount, long, entryPrice, startTime, daysOfDuration))] = bet;
+
+        // transfer token
+        IERC20(token).transfer(owner, (amount * _discount) / 100);
+
+        emit ReceiveTheBet(recipient, owner);
     }
 
     function getChainlinkPrice() public view returns (uint256) {

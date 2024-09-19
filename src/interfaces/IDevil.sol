@@ -67,12 +67,14 @@ interface IDevil {
     /// @param amount The deposit token amount of the bet
     /// @param entryPrice The entry token price of the bet
     /// @param long True if the direction of the bet is long, otherwise false
+    /// @param startTime The start timestamp of the bet
     /// @param daysOfDuration The days of duration of the bet
     /// @param discount The discount number (x%)
     function sendTheBetToTheDestinedPerson(
         uint128 amount,
-        bool long,
         uint256 entryPrice,
+        bool long,
+        uint256 startTime,
         uint8 daysOfDuration,
         uint16 discount
     ) external;
@@ -82,14 +84,16 @@ interface IDevil {
     /// @param amount The deposit token amount of the bet
     /// @param entryPrice The entry token price of the bet
     /// @param long True if the direction of the bet is long, otherwise false
+    /// @param startTime The start timestamp of the bet
     /// @param daysOfDuration The days of duration of the bet
     /// @param discount The discount number (x%)
     /// @param recipient The address for which the bet will be transferred
     function receiveTheBet(
         address owner,
         uint128 amount,
-        bool long,
         uint256 entryPrice,
+        bool long,
+        uint256 startTime,
         uint8 daysOfDuration,
         uint16 discount,
         address recipient
