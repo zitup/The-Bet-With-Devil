@@ -41,13 +41,14 @@ interface IDevil {
     /// @param long True if the direction of the bet is long, otherwise false
     /// @param acceptablePrice The acceptable token price for the bet, decimals 18
     /// @param daysOfDuration The days of duration of the bet
+    /// @return bet The info of the bet
     function signTheBet(
         address recipient,
         uint128 amount,
         bool long,
         uint256 acceptablePrice,
         uint8 daysOfDuration
-    ) external;
+    ) external returns (Bet memory bet);
 
     /// @notice Bear the loss or enjoy the profit
     /// @param amount The deposit token amount of the bet
@@ -55,13 +56,14 @@ interface IDevil {
     /// @param long True if the direction of the bet is long, otherwise false
     /// @param startTime The start timestamp of the bet
     /// @param daysOfDuration The days of duration of the bet
+    /// @return paid The amount returned after the bet is completed
     function bearTheBet(
         uint128 amount,
         uint256 entryPrice,
         bool long,
         uint256 startTime,
         uint8 daysOfDuration
-    ) external;
+    ) external returns (uint128 paid);
 
     /// @notice Set a discount for a bet and wait for a destined person to buy it
     /// @param amount The deposit token amount of the bet
