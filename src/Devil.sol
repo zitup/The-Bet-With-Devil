@@ -7,6 +7,7 @@ import {BetStatus, Bet} from "./types/Bet.sol";
 import {IDevil} from "./interfaces/IDevil.sol";
 import {AggregatorV3Interface} from "./interfaces/external/AggregatorV3Interface.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {OracleLibrary} from "./library/UniswapV3Observe.sol";
 
 contract Devil is IDevil, ReentrancyGuard, Pausable {
     AggregatorV3Interface internal priceFeed;
@@ -44,6 +45,7 @@ contract Devil is IDevil, ReentrancyGuard, Pausable {
     /// @notice Thrown when the discount doesn't match. Avoid changing discount before the swap tx
     error UnmatchedDiscount();
     error InvalidBet();
+    error BetNotOver();
 
     event SignedTheBet(
         address sender,
@@ -114,8 +116,14 @@ contract Devil is IDevil, ReentrancyGuard, Pausable {
         bytes32 key = keccak256(abi.encodePacked(msg.sender, amount, long, entryPrice, startTime, daysOfDuration));
         Bet memory bet = bets[key];
         if (bet.status == BetStatus.CREATED) {
+            uint256 endTimstamp = startTime + daysOfDuration * 86400; // 24 * 60 *60
+            if (endTimstamp > block.timestamp) {
+                revert BetNotOver();
+            }
+            uint256 secondsAgo = block.timestamp - endTimstamp;
+            (int24 arithmeticMeanTick, ) = OracleLibrary.consult(address(this), secondsAgo);
             // compare price
-            uint256 price = getChainlinkPrice();
+            uint256 price = OracleLibrary.getPrice(arithmeticMeanTick);
             if ((long && price > entryPrice) || (!long && price < entryPrice)) {
                 // win
                 paid = (amount * (100 + ratio)) / 100;
