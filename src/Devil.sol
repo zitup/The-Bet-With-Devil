@@ -30,6 +30,9 @@ contract Devil is IDevil, ReentrancyGuard, Pausable {
     /// @notice Reward or punish ratio when winning or losing(x%)
     uint8 public immutable ratio;
 
+    /// @notice Uniswap V3 pool address
+    address private immutable pool;
+
     /// @notice Thrown when the days of duration is less then MINIMUM_DURATION
     error InvalidDuration();
     /// @notice Thrown when the feed price is less then or equal 0
@@ -60,8 +63,16 @@ contract Devil is IDevil, ReentrancyGuard, Pausable {
     event SendTheBetToTheDestinedPerson(bytes32 indexed key, uint16 indexed _discount);
     event ReceiveTheBet(address indexed recipient, address indexed owner, bytes32 key, uint256 discountAmount);
 
-    constructor(address _token, address _priceFeed, uint256 _priceFeedHeartbeat, address _sequencer, uint8 _ratio) {
+    constructor(
+        address _token,
+        address _pool,
+        address _priceFeed,
+        uint256 _priceFeedHeartbeat,
+        address _sequencer,
+        uint8 _ratio
+    ) {
         token = _token;
+        pool = _pool;
         priceFeed = AggregatorV3Interface(_priceFeed);
         priceFeedHeartbeat = _priceFeedHeartbeat;
         sequencer = AggregatorV3Interface(_sequencer);
@@ -121,7 +132,7 @@ contract Devil is IDevil, ReentrancyGuard, Pausable {
                 revert BetNotOver();
             }
             uint256 secondsAgo = block.timestamp - endTimstamp;
-            (int24 arithmeticMeanTick, ) = OracleLibrary.consult(address(this), secondsAgo);
+            (int24 arithmeticMeanTick, ) = OracleLibrary.consult(pool, secondsAgo);
             // compare price
             uint256 price = OracleLibrary.getPrice(arithmeticMeanTick);
             if ((long && price > entryPrice) || (!long && price < entryPrice)) {
