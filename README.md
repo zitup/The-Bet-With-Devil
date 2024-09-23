@@ -3,6 +3,9 @@
 ## Security Concern
 
 1. https://medium.com/cyfrin/chainlink-oracle-defi-attacks-93b6cb6541bf
+2. https://www.rareskills.io/post/smart-contract-security
+3. https://blog.sigmaprime.io/solidity-security.html
+4. https://www.kingoftheether.com/contract-safety-checklist.html
 
 ## Usage
 
