@@ -58,3 +58,11 @@ $ forge --help
 $ anvil --help
 $ cast --help
 ```
+
+## Disclaimer
+
+Disclaimer: This repository is only used for learning purposes. Any illegal use is prohibited. Any consequences caused by malicious use of this repository have nothing to do with this repository.
+
+No commercial use!  
+No modification!  
+No distribution!
